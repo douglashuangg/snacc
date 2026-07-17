@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Snacc",
+    "slug": "snacc",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "snacc",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Snacc uses your photos when you add a snack image."
+        }
+      ],
+      "expo-splash-screen",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "android": {
+      "package": "com.snacc.app"
+    },
+    "ios": {
+      "bundleIdentifier": "com.snacc.app",
+      "supportsTablet": true
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
