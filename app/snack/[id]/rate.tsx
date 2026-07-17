@@ -39,7 +39,6 @@ export default function RateScreen() {
   useEffect(() => {
     if (existing.data) {
       // The query result hydrates this local, editable draft once it arrives.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValues({
         taste: existing.data.taste,
         texture: existing.data.texture,
