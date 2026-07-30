@@ -39,25 +39,7 @@ export default function DiscoverScreen() {
 
   return (
     <Screen>
-      <View style={styles.hero}>
-        <Text style={styles.kicker}>FIND YOUR NEXT FAVOURITE</Text>
-        <Text style={styles.title}>Great snacks, ranked by snack people.</Text>
-        <Text style={styles.subtitle}>
-          Browse specific flavours, see honest factor scores, and compare before you buy.
-        </Text>
-        <Link href="/browse" asChild>
-          <Button icon="search">Find a snack</Button>
-        </Link>
-      </View>
 
-      {!isSupabaseConfigured ? (
-        <View style={styles.demo}>
-          <Text style={styles.demoTitle}>Demo catalogue</Text>
-          <Text style={styles.demoText}>
-            Add Supabase credentials to enable accounts, contributions, and live ratings.
-          </Text>
-        </View>
-      ) : null}
 
       <Heading>Browse by taste</Heading>
       <CategoryChips

@@ -1,7 +1,7 @@
 export const colors = {
   ink: "#201A17",
   muted: "#746B65",
-  background: "#FFF9F2",
+  background: "#FFFFFF",
   surface: "#FFFFFF",
   primary: "#E85D3F",
   primaryDark: "#B93C24",

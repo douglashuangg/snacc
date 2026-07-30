@@ -46,15 +46,6 @@ export default function SignInScreen() {
         </Text>
       </View>
 
-      {!isSupabaseConfigured ? (
-        <View style={styles.notice}>
-          <Text style={styles.noticeTitle}>Backend setup required</Text>
-          <Text style={styles.copy}>
-            Copy .env.example to .env and add your Supabase URL and public anon
-            key.
-          </Text>
-        </View>
-      ) : null}
 
       <Controller
         control={control}

@@ -37,6 +37,8 @@ export default function TriedSnackScreen() {
           <Button onPress={() => router.push("/sign-in")}>
             Sign in or create account
           </Button>
+
+          <Button onPress={() => router.push("/sign-in")}>Sign in or create account</Button>
         </View>
       </Screen>
     );
