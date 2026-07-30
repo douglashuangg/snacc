@@ -28,15 +28,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="browse"
         options={{
-          title: "Browse",
+          title: "Search",
           tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="add"
         options={{
-          title: "Tried",
-          href: user ? "/add" : null,
+          title: "Snacked",
           tabBarIcon: ({ color, size }) => <Ionicons name="checkmark-circle" color={color} size={size} />,
         }}
       />

@@ -8,6 +8,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
 import { AuthProvider } from "@/providers/AuthProvider";
 
+export const unstable_settings = {
+  initialRouteName: "(tabs)",
+};
+
 export default function RootLayout() {
   const [queryClient] = useState(
     () =>
@@ -30,10 +34,12 @@ export default function RootLayout() {
                 headerStyle: { backgroundColor: colors.background },
                 headerTintColor: colors.ink,
                 headerShadowVisible: false,
+                headerBackTitle: "Back",
                 contentStyle: { backgroundColor: colors.background },
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false, presentation: "card" }} />
               <Stack.Screen name="snack/[id]" options={{ title: "Snack details" }} />
               <Stack.Screen name="snack/[id]/rate" options={{ title: "Rate & review", presentation: "modal" }} />
               <Stack.Screen name="compare" options={{ title: "Compare snacks" }} />

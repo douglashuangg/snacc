@@ -26,8 +26,7 @@ export default function SignUpScreen() {
   });
 
   const finish = () => {
-    if (returnTo) router.replace(returnTo as never);
-    else router.back();
+    router.replace("/onboarding");
   };
 
   const createWithEmail = handleSubmit(async ({ email, password }) => {

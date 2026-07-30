@@ -1,5 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View, ScrollView } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, TextInput, View, ScrollView } from "react-native";
 
 import {
   CategoryChips,
@@ -41,14 +43,36 @@ export default function BrowseScreen() {
 
   return (
     <Screen>
-      <TextInput
-        accessibilityLabel="Search snacks"
-        value={search}
-        onChangeText={setSearch}
-        placeholder={source === "community" ? "Search brand, product, or flavour" : "Search global database..."}
-        placeholderTextColor={colors.muted}
-        style={styles.search}
-      />
+      <View style={styles.searchRow}>
+        <TextInput
+          accessibilityLabel="Search snacks"
+          value={search}
+          onChangeText={setSearch}
+          placeholder={source === "community" ? "Search brand, product, or flavour" : "Search global database..."}
+          placeholderTextColor={colors.muted}
+          style={styles.search}
+        />
+        <Pressable
+          style={styles.cameraButton}
+          onPress={async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== "granted") {
+              Alert.alert("Permission needed", "Please allow camera access in your device settings.");
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              quality: 0.8,
+            });
+            if (!result.canceled) {
+              // TODO: process the captured image for snack identification
+              Alert.alert("Photo captured!", "Snack identification coming soon.");
+            }
+          }}
+        >
+          <Ionicons name="camera-outline" size={24} color={colors.ink} />
+        </Pressable>
+      </View>
 
       <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.md, marginBottom: spacing.md }}>
         <FilterChip label="Community" active={source === "community"} onPress={() => setSource("community")} />
@@ -196,7 +220,13 @@ function FilterChip({
 }
 
 const styles = StyleSheet.create({
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
   search: {
+    flex: 1,
     minHeight: 52,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
@@ -205,6 +235,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     color: colors.ink,
     fontSize: 16,
+  },
+  cameraButton: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
   taskBar: { flexGrow: 0, marginBottom: spacing.md },
   taskBarContent: { gap: spacing.sm, paddingBottom: spacing.xs },
