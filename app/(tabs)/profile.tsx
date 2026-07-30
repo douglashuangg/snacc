@@ -13,22 +13,15 @@ export default function ProfileScreen() {
     queryKey: ["profile-activity", user?.id],
     enabled: Boolean(user),
     queryFn: async () => {
-      const [ratings, snacks] = await Promise.all([
-        supabase
-          .from("ratings")
-          .select("id, overall_score, review_text, updated_at, snacks(id, brand, product_name, flavour)")
-          .eq("user_id", user!.id)
-          .order("updated_at", { ascending: false }),
-        supabase
-          .from("snacks")
-          .select("id, brand, product_name, flavour, status, source_type, created_at")
-          .eq("created_by", user!.id)
-          .eq("source_type", "community")
-          .order("created_at", { ascending: false }),
-      ]);
+      const ratings = await supabase
+        .from("ratings")
+        .select(
+          "id, overall_score, review_text, updated_at, snacks(id, brand, product_name, flavour, name_ja, maker_name)",
+        )
+        .eq("user_id", user!.id)
+        .order("updated_at", { ascending: false });
       if (ratings.error) throw ratings.error;
-      if (snacks.error) throw snacks.error;
-      return { ratings: ratings.data, snacks: snacks.data };
+      return { ratings: ratings.data };
     },
   });
 
@@ -38,6 +31,13 @@ export default function ProfileScreen() {
       <Screen>
         <View style={styles.gate}>
           <Text style={styles.title}>Keep track of your snack takes.</Text>
+          <Text style={styles.copy}>
+            Create an account to rate snacks you’ve tried from the catalogue.
+          </Text>
+          {!configured ? (
+            <Text style={styles.notice}>Supabase credentials are required for accounts.</Text>
+          ) : null}
+          <Button onPress={() => router.push("/sign-in")}>Sign in or sign up</Button>
           <Text style={styles.copy}>Create an account to rate, review, and add snacks.</Text>
 
           <Button onPress={() => router.push("/sign-in")}>Sign in or create account</Button>
@@ -47,7 +47,6 @@ export default function ProfileScreen() {
   }
 
   const ratings = activity.data?.ratings ?? [];
-  const snacks = activity.data?.snacks ?? [];
   return (
     <Screen>
       <View style={styles.profile}>
@@ -56,7 +55,9 @@ export default function ProfileScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.email}>{user.email}</Text>
-          <Text style={styles.copy}>Snack member since {new Date(user.created_at).toLocaleDateString()}</Text>
+          <Text style={styles.copy}>
+            Snack member since {new Date(user.created_at).toLocaleDateString()}
+          </Text>
         </View>
       </View>
       <Button
@@ -65,37 +66,37 @@ export default function ProfileScreen() {
           try {
             await signOut();
           } catch (error) {
-            Alert.alert("Could not sign out", error instanceof Error ? error.message : "Try again.");
+            Alert.alert(
+              "Could not sign out",
+              error instanceof Error ? error.message : "Try again.",
+            );
           }
         }}
       >
         Sign out
       </Button>
 
-      <Heading>Your ratings</Heading>
+      <Heading>Snacks you’ve tried</Heading>
       {activity.isLoading ? <LoadingState /> : null}
       {!activity.isLoading && !ratings.length ? (
-        <EmptyState title="No ratings yet" message="Your snack reviews will appear here." />
+        <EmptyState
+          title="No ratings yet"
+          message="Use the Tried tab to pick a snack from the catalogue and rate it."
+        />
       ) : null}
-      {ratings.map((rating: any) => (
-        <Link key={rating.id} href={`/snack/${rating.snacks.id}`} style={styles.activity}>
-          <Text style={styles.activityTitle}>
-            {rating.snacks.brand} {rating.snacks.flavour}
-          </Text>
-          <Text style={styles.score}>{Number(rating.overall_score).toFixed(1)}</Text>
-        </Link>
-      ))}
-
-      <Heading>Snacks you added</Heading>
-      {!snacks.length ? (
-        <EmptyState title="Nothing added yet" message="Help the community discover something new." />
-      ) : null}
-      {snacks.map((snack: any) => (
-        <Link key={snack.id} href={`/snack/${snack.id}`} style={styles.activity}>
-          <Text style={styles.activityTitle}>{snack.brand} · {snack.flavour}</Text>
-          <Text style={styles.status}>{snack.status}</Text>
-        </Link>
-      ))}
+      {ratings.map((rating: any) => {
+        const snack = rating.snacks;
+        const title =
+          snack?.name_ja ||
+          `${snack?.brand ?? ""} ${snack?.flavour ?? ""}`.trim() ||
+          "Snack";
+        return (
+          <Link key={rating.id} href={`/snack/${snack.id}`} style={styles.activity}>
+            <Text style={styles.activityTitle}>{title}</Text>
+            <Text style={styles.score}>{Number(rating.overall_score).toFixed(1)}</Text>
+          </Link>
+        );
+      })}
     </Screen>
   );
 }
@@ -104,7 +105,12 @@ const styles = StyleSheet.create({
   gate: { paddingTop: 80, gap: spacing.md },
   title: { color: colors.ink, fontSize: 32, fontWeight: "900", letterSpacing: -0.8 },
   copy: { color: colors.muted, lineHeight: 21 },
-  notice: { color: colors.primaryDark, backgroundColor: "#FFF1C7", padding: spacing.md, borderRadius: radius.md },
+  notice: {
+    color: colors.primaryDark,
+    backgroundColor: "#FFF1C7",
+    padding: spacing.md,
+    borderRadius: radius.md,
+  },
   profile: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   avatar: {
     width: 58,
@@ -126,5 +132,4 @@ const styles = StyleSheet.create({
   },
   activityTitle: { color: colors.ink, fontWeight: "800" },
   score: { color: colors.primary, fontWeight: "900" },
-  status: { color: colors.muted, textTransform: "capitalize" },
 });
