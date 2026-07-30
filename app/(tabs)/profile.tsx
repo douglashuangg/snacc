@@ -6,9 +6,9 @@ import { decode } from "base64-arraybuffer";
 import { Image } from "expo-image";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { Button, EmptyState, Heading, LoadingState, Screen } from "@/components/ui";
+import { Button, EmptyState, ErrorState, Field, Heading, LoadingState, Screen, SnackCard } from "@/components/ui";
 import { TasteRadarChart } from "@/components/TasteRadarChart";
 import { colors, radius, spacing } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
@@ -18,6 +18,16 @@ export default function ProfileScreen() {
   const { user, loading, signOut, configured } = useAuth();
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
+
+  // Bookmarks Modal state
+  const [showBookmarksModal, setShowBookmarksModal] = useState(false);
+
+  // Create List state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newListTitle, setNewListTitle] = useState("");
+  const [newListDesc, setNewListDesc] = useState("");
+  const [newListCover, setNewListCover] = useState<string | null>(null);
+  const [isCreatingList, setIsCreatingList] = useState(false);
 
   const profile = useQuery({
     queryKey: ["profile", user?.id],
@@ -48,6 +58,113 @@ export default function ProfileScreen() {
       return { ratings: ratings.data };
     },
   });
+
+  const userLists = useQuery({
+    queryKey: ["user-lists", user?.id],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lists")
+        .select("*, list_items(count)")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const userBookmarks = useQuery({
+    queryKey: ["user-bookmarks-count", user?.id],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("bookmarks")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const bookmarkedSnacks = useQuery({
+    queryKey: ["user-bookmarked-snacks", user?.id],
+    enabled: Boolean(user) && showBookmarksModal,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookmarks")
+        .select("id, created_at, snacks(*)")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const pickListCover = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setNewListCover(result.assets[0].uri);
+    }
+  };
+
+  const handleCreateList = async () => {
+    if (!newListTitle.trim()) {
+      Alert.alert("Title required", "Please give your list a title.");
+      return;
+    }
+    if (!user) return;
+
+    try {
+      setIsCreatingList(true);
+      let coverUrl: string | null = null;
+
+      if (newListCover) {
+        const base64 = await FileSystem.readAsStringAsync(newListCover, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const ext = newListCover.split(".").pop()?.toLowerCase() || "jpg";
+        const filePath = `${user.id}/list_${Date.now()}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(filePath, decode(base64), {
+            contentType: `image/${ext}`,
+            upsert: true,
+          });
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from("avatars")
+            .getPublicUrl(filePath);
+          coverUrl = publicUrlData.publicUrl;
+        }
+      }
+
+      const { error } = await supabase.from("lists").insert({
+        user_id: user.id,
+        title: newListTitle.trim(),
+        description: newListDesc.trim() || null,
+        cover_image_url: coverUrl,
+      });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["user-lists", user.id] });
+      setNewListTitle("");
+      setNewListDesc("");
+      setNewListCover(null);
+      setShowCreateModal(false);
+    } catch (err) {
+      Alert.alert("Could not create list", err instanceof Error ? err.message : "Try again.");
+    } finally {
+      setIsCreatingList(false);
+    }
+  };
 
   const changeAvatar = async () => {
     if (!user) return;
@@ -162,17 +279,62 @@ export default function ProfileScreen() {
         <TasteRadarChart />
       </View>
 
-      <Heading>Lists</Heading>
+      <Heading
+        action={
+          <Pressable
+            style={styles.createListPill}
+            onPress={() => setShowCreateModal(true)}
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={styles.createListPillText}>New List</Text>
+          </Pressable>
+        }
+      >
+        Lists
+      </Heading>
+
       <View style={styles.listsGrid}>
+        {/* Default Bookmarks List */}
         <Pressable
-          style={styles.createListGridCard}
-          onPress={() => Alert.alert("Create List", "Custom list creation coming soon!")}
+          style={styles.listCard}
+          onPress={() => router.push("/list/bookmarks")}
         >
-          <View style={styles.createListContent}>
-            <Ionicons name="add-circle-outline" size={36} color={colors.primary} />
-            <Text style={styles.createListCardText}>Create list</Text>
+          <View style={[styles.listCoverImage, styles.defaultListCover]}>
+            <Ionicons name="bookmark" size={32} color={colors.primary} />
+          </View>
+          <View style={styles.listInfo}>
+            <Text style={styles.listTitle} numberOfLines={1}>
+              Bookmarks
+            </Text>
+            <Text style={styles.listCount}>
+              {userBookmarks.data ?? 0} {(userBookmarks.data ?? 0) === 1 ? "snack" : "snacks"}
+            </Text>
           </View>
         </Pressable>
+
+        {/* User Created Lists */}
+        {userLists.data?.map((list: any) => {
+          const itemCount = list.list_items?.[0]?.count ?? 0;
+          return (
+            <Pressable key={list.id} style={styles.listCard} onPress={() => router.push(`/list/${list.id}`)}>
+              {list.cover_image_url ? (
+                <Image source={list.cover_image_url} style={styles.listCoverImage} />
+              ) : (
+                <View style={[styles.listCoverImage, { alignItems: "center", justifyContent: "center" }]}>
+                  <Ionicons name="list" size={32} color={colors.muted} />
+                </View>
+              )}
+              <View style={styles.listInfo}>
+                <Text style={styles.listTitle} numberOfLines={1}>
+                  {list.title}
+                </Text>
+                <Text style={styles.listCount}>
+                  {itemCount} {itemCount === 1 ? "snack" : "snacks"}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
 
       <View style={{ marginTop: spacing.xl }}>
@@ -192,6 +354,52 @@ export default function ProfileScreen() {
           Sign out
         </Button>
       </View>
+
+      {/* Create List Modal */}
+      <Modal visible={showCreateModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Create New List</Text>
+              <Pressable onPress={() => setShowCreateModal(false)}>
+                <Ionicons name="close" size={24} color={colors.ink} />
+              </Pressable>
+            </View>
+
+            <Field
+              label="List Title"
+              value={newListTitle}
+              onChangeText={setNewListTitle}
+              placeholder="e.g. Favorite Japanese Chips"
+            />
+
+            <Field
+              label="Description (Optional)"
+              value={newListDesc}
+              onChangeText={setNewListDesc}
+              placeholder="e.g. My all-time top tier chips rank"
+            />
+
+            <Text style={styles.coverLabel}>Cover Image (Optional)</Text>
+            <Pressable style={styles.coverPicker} onPress={pickListCover}>
+              {newListCover ? (
+                <Image source={newListCover} style={styles.coverPreview} />
+              ) : (
+                <View style={styles.coverPlaceholder}>
+                  <Ionicons name="image-outline" size={28} color={colors.muted} />
+                  <Text style={styles.coverPlaceholderText}>Tap to pick cover image</Text>
+                </View>
+              )}
+            </Pressable>
+
+            <View style={styles.modalActions}>
+              <Button onPress={handleCreateList} disabled={isCreatingList}>
+                {isCreatingList ? "Creating…" : "Create List"}
+              </Button>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -301,19 +509,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing.xs,
   },
-  createListIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#FFE5D9",
+  createListPill: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 4,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
   },
-  createListCardText: {
-    color: colors.ink,
+  createListPillText: {
+    color: "#fff",
     fontWeight: "800",
-    fontSize: 14,
-    textAlign: "center",
+    fontSize: 13,
   },
   listCard: {
     width: "47.5%",
@@ -329,6 +537,11 @@ const styles = StyleSheet.create({
     height: "68%",
     backgroundColor: colors.chip,
   },
+  defaultListCover: {
+    backgroundColor: "#FFE5D9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   listInfo: {
     padding: spacing.xs,
   },
@@ -340,5 +553,77 @@ const styles = StyleSheet.create({
   listCount: {
     color: colors.muted,
     fontSize: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalCard: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  modalTitle: {
+    color: colors.ink,
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  coverLabel: {
+    color: colors.ink,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  coverPicker: {
+    width: "100%",
+    height: 120,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: "hidden",
+  },
+  coverPreview: {
+    width: "100%",
+    height: "100%",
+  },
+  coverPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+  },
+  coverPlaceholderText: {
+    color: colors.muted,
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  modalActions: {
+    marginTop: spacing.sm,
+  },
+  bookmarksModalContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingTop: spacing.md,
+  },
+  bookmarksModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  bookmarksModalContent: {
+    padding: spacing.md,
+    gap: spacing.sm,
   },
 });

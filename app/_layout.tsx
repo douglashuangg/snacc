@@ -41,6 +41,7 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false, presentation: "card" }} />
               <Stack.Screen name="snack/[id]" options={{ title: "Snack details" }} />
+              <Stack.Screen name="list/[id]" options={{ title: "List" }} />
               <Stack.Screen name="snack/[id]/rate" options={{ title: "Rate & review", presentation: "modal" }} />
               <Stack.Screen name="compare" options={{ title: "Compare snacks" }} />
               <Stack.Screen name="sign-in" options={{ title: "Your account", presentation: "modal" }} />
