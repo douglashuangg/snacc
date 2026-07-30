@@ -112,6 +112,7 @@ async function main() {
       snack.image_url,
       pathText,
       imageBySnack,
+      snack.name_ja ?? "",
     );
     if (rejectReason === "no_image") {
       skippedNoImage += 1;

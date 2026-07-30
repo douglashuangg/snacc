@@ -47,6 +47,7 @@ async function main() {
       snack.image_url,
       pathBySnack.get(snack.id) ?? "",
       imageBySnack,
+      snack.name_ja ?? "",
     );
     if (reason) rejectIds[reason].push(snack.id);
   }

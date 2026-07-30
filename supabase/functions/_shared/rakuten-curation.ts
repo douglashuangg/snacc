@@ -62,6 +62,11 @@ export const JUNK_PATH_HINTS = [
   "文房具",
   "コスメ",
   "コンタクト",
+  // Kitchen tooling that matches FOOD's "クッキー" substring otherwise
+  "クッキー型",
+  "クッキーカッター",
+  "cookie cutter",
+  "型抜き",
 ] as const;
 
 export type RejectReason = "no_image" | "non_snack";
@@ -105,8 +110,13 @@ export function genrePathText(genre: Pick<RakutenGenreRow, "name_ja" | "path_ja"
     .join("/");
 }
 
+export function hasJunkHint(text: string): boolean {
+  const lower = text.toLowerCase();
+  return JUNK_PATH_HINTS.some((hint) => lower.includes(hint.toLowerCase()));
+}
+
 export function isFoodGenre(pathText: string): boolean {
-  if (JUNK_PATH_HINTS.some((hint) => pathText.includes(hint))) return false;
+  if (hasJunkHint(pathText)) return false;
   return FOOD_PATH_HINTS.some((hint) => pathText.includes(hint));
 }
 
@@ -123,9 +133,10 @@ export function rejectReasonForSnack(
   imageUrl: string | null | undefined,
   pathText: string,
   imageBySnack: Map<string, string>,
+  productText = "",
 ): RejectReason | null {
   if (!hasSnackImage(snackId, imageUrl, imageBySnack)) return "no_image";
-  if (!isFoodGenre(pathText)) return "non_snack";
+  if (hasJunkHint(productText) || !isFoodGenre(pathText)) return "non_snack";
   return null;
 }
 
