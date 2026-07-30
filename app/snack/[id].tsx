@@ -145,7 +145,7 @@ export default function SnackDetailsScreen() {
       ) : null}
 
       <View style={styles.actions}>
-        <View style={{ flex: 1 }}><Button onPress={rate} icon="star">Rate it</Button></View>
+        {!id.startsWith("sp-") ? <View style={{ flex: 1 }}><Button onPress={rate} icon="star">Rate it</Button></View> : null}
         <View style={{ flex: 1 }}>
           <Button
             variant="secondary"
@@ -163,15 +163,19 @@ export default function SnackDetailsScreen() {
       <Heading>Community score</Heading>
       <RatingBreakdown snack={item} />
 
-      <Heading>Reviews</Heading>
-      {reviews.isLoading ? <LoadingState label="Loading reviews…" /> : null}
-      {reviews.error ? <ErrorState message={reviews.error.message} retry={() => reviews.refetch()} /> : null}
-      {!reviews.isLoading && !reviews.data?.length ? (
-        <EmptyState title="No written reviews" message="Share the first detailed snack take." />
-      ) : null}
-      {reviews.data?.map((rating) => <ReviewCard key={rating.id} rating={rating} />)}
+      {!id.startsWith("sp-") ? (
+        <>
+          <Heading>Reviews</Heading>
+          {reviews.isLoading ? <LoadingState label="Loading reviews…" /> : null}
+          {reviews.error ? <ErrorState message={reviews.error.message} retry={() => reviews.refetch()} /> : null}
+          {!reviews.isLoading && !reviews.data?.length ? (
+            <EmptyState title="No written reviews" message="Share the first detailed snack take." />
+          ) : null}
+          {reviews.data?.map((rating) => <ReviewCard key={rating.id} rating={rating} />)}
 
-      <Button variant="secondary" icon="flag-outline" onPress={report}>Report content</Button>
+          <Button variant="secondary" icon="flag-outline" onPress={report}>Report content</Button>
+        </>
+      ) : null}
     </Screen>
   );
 }

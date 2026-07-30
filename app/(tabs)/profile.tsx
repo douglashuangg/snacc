@@ -39,10 +39,8 @@ export default function ProfileScreen() {
         <View style={styles.gate}>
           <Text style={styles.title}>Keep track of your snack takes.</Text>
           <Text style={styles.copy}>Create an account to rate, review, and add snacks.</Text>
-          {!configured ? (
-            <Text style={styles.notice}>Supabase credentials are required for accounts.</Text>
-          ) : null}
-          <Button onPress={() => router.push("/sign-in")}>Sign in or sign up</Button>
+
+          <Button onPress={() => router.push("/sign-in")}>Sign in or create account</Button>
         </View>
       </Screen>
     );

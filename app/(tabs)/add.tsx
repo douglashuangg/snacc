@@ -49,9 +49,7 @@ export default function AddSnackScreen() {
           <Text style={styles.copy}>
             Sign in to submit a specific brand, product, and flavour.
           </Text>
-          {!configured ? (
-            <Text style={styles.notice}>Connect Supabase in .env before creating an account.</Text>
-          ) : null}
+
           <Button onPress={() => router.push("/sign-in")}>Sign in or create account</Button>
         </View>
       </Screen>

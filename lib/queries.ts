@@ -124,6 +124,29 @@ export async function fetchSnacks(filters: SnackFilters = {}): Promise<Snack[]> 
 }
 
 export async function fetchSnack(id: string): Promise<Snack> {
+  if (id.startsWith('sp-')) {
+    const spId = id.replace('sp-', '');
+    const apiKey = process.env.EXPO_PUBLIC_SPOONACULAR_API_KEY;
+    const res = await fetch(`https://api.spoonacular.com/food/products/${spId}?apiKey=${apiKey}`);
+    if (!res.ok) throw new Error("Failed to fetch from Spoonacular");
+    const json = await res.json();
+    return {
+      id: `sp-${json.id}`,
+      product_name: json.title,
+      brand: json.brand || json.title.split(' ')[0],
+      flavour: "Spoonacular",
+      image_url: json.image || null,
+      description: json.ingredientCount ? `Ingredients: ${json.ingredientCount}` : "",
+      subcategory_id: "",
+      price_level: 1,
+      status: "approved",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      rating_count: 0,
+      average_score: null,
+    } as Snack;
+  }
+
   if (!isSupabaseConfigured) {
     const snack = sampleSnacks.find((item) => item.id === id);
     if (!snack) throw new Error("Snack not found");
