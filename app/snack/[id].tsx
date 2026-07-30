@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
 import {
   Button,
@@ -20,6 +20,15 @@ import { useCompareStore } from "@/lib/compare-store";
 import { useReviews, useSnack } from "@/lib/queries";
 import { requireSupabase, supabase } from "@/lib/supabase";
 import { useAuth } from "@/providers/AuthProvider";
+
+function formatJpyRange(min?: number | null, max?: number | null, average?: number | null) {
+  const formatter = new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY" });
+  if (min != null && max != null && min !== max) return `${formatter.format(min)}–${formatter.format(max)}`;
+  if (min != null) return formatter.format(min);
+  if (max != null) return formatter.format(max);
+  if (average != null) return `Avg. ${formatter.format(average)}`;
+  return null;
+}
 
 export default function SnackDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -67,14 +76,27 @@ export default function SnackDetailsScreen() {
       { text: "Cancel", style: "cancel" },
     ]);
   };
+  const rakutenPrice = formatJpyRange(
+    item.price_min_jpy,
+    item.price_max_jpy,
+    item.price_average_jpy,
+  );
+  const isRakuten = item.source_type === "rakuten";
+  const displayBrand = item.maker_name || item.brand;
+  const displayTitle = item.name_ja || item.product_name;
+  const genreCategories = (item.rakuten_genres ?? []).map((genre) => ({
+    id: genre.genre_id,
+    name: genre.name_ja,
+    slug: genre.genre_id,
+  }));
 
   return (
     <Screen>
       <Image source={item.image_url || undefined} style={styles.hero} contentFit="cover" transition={200} />
       <View style={styles.titleRow}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.brand}>{item.brand}</Text>
-          <Text style={styles.title}>{item.product_name}</Text>
+          <Text style={styles.brand}>{displayBrand}</Text>
+          <Text style={styles.title}>{displayTitle}</Text>
           <Text style={styles.flavour}>{item.flavour}</Text>
         </View>
         <ScoreBadge score={item.average_score} />
@@ -84,8 +106,43 @@ export default function SnackDetailsScreen() {
         <Text style={styles.metaText}>{item.subcategories?.name ?? "Snack"}</Text>
         <Text style={styles.metaText}>{item.rating_count ?? 0} ratings</Text>
       </View>
-      <CategoryChips categories={item.categories ?? []} />
+      <CategoryChips categories={item.categories?.length ? item.categories : genreCategories} />
       {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
+      {isRakuten ? (
+        <View style={styles.rakutenCard}>
+          <Text style={styles.rakutenHeading}>Rakuten product information</Text>
+          {item.name_ja && item.name_ja !== item.product_name ? (
+            <Text style={styles.description}>{item.name_ja}</Text>
+          ) : null}
+          {item.maker_name ? (
+            <Text style={styles.metaText}>Maker: {item.maker_name}</Text>
+          ) : null}
+          {genreCategories.length ? (
+            <Text style={styles.metaText}>
+              Genre: {genreCategories.map((genre) => genre.name).join(" · ")}
+            </Text>
+          ) : null}
+          {item.description_ja ? <Text style={styles.rakutenDescription}>{item.description_ja}</Text> : null}
+          {rakutenPrice ? <Text style={styles.metaText}>Current price range: {rakutenPrice}</Text> : null}
+          {item.rakuten_review_average != null ? (
+            <Text style={styles.metaText}>
+              Rakuten rating: {Number(item.rakuten_review_average).toFixed(1)}/5
+              {item.rakuten_review_count != null ? ` (${item.rakuten_review_count} reviews)` : ""}
+            </Text>
+          ) : null}
+          {item.package_size_text ? (
+            <Text style={styles.metaText}>Package: {item.package_size_text}</Text>
+          ) : null}
+          {item.rakuten_product_url ? (
+            <Pressable onPress={() => Linking.openURL(item.rakuten_product_url!)}>
+              <Text style={styles.rakutenLink}>View product on Rakuten</Text>
+            </Pressable>
+          ) : null}
+          <Pressable onPress={() => Linking.openURL("https://developers.rakuten.com/")}>
+            <Text style={styles.rakutenCredit}>Supported by Rakuten Developers</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <View style={styles.actions}>
         <View style={{ flex: 1 }}><Button onPress={rate} icon="star">Rate it</Button></View>
@@ -128,5 +185,17 @@ const styles = StyleSheet.create({
   meta: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   metaText: { color: colors.muted, fontWeight: "600" },
   description: { color: colors.ink, fontSize: 16, lineHeight: 24 },
+  rakutenCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  rakutenHeading: { color: colors.ink, fontSize: 17, fontWeight: "800" },
+  rakutenDescription: { color: colors.muted, lineHeight: 20 },
+  rakutenLink: { color: colors.primaryDark, fontWeight: "800", textDecorationLine: "underline" },
+  rakutenCredit: { color: colors.muted, fontSize: 12, textDecorationLine: "underline" },
   actions: { flexDirection: "row", gap: spacing.sm },
 });

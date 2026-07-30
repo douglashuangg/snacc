@@ -21,8 +21,9 @@ export default function ProfileScreen() {
           .order("updated_at", { ascending: false }),
         supabase
           .from("snacks")
-          .select("id, brand, product_name, flavour, status, created_at")
+          .select("id, brand, product_name, flavour, status, source_type, created_at")
           .eq("created_by", user!.id)
+          .eq("source_type", "community")
           .order("created_at", { ascending: false }),
       ]);
       if (ratings.error) throw ratings.error;

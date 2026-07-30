@@ -8,6 +8,17 @@ export const signInSchema = z.object({
   password: z.string().min(8, "Use at least 8 characters").max(72),
 });
 
+export const signUpSchema = z
+  .object({
+    email: z.email("Enter a valid email"),
+    password: z.string().min(8, "Use at least 8 characters").max(72),
+    confirmPassword: z.string().min(8, "Confirm your password").max(72),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords must match",
+    path: ["confirmPassword"],
+  });
+
 export const snackSchema = z.object({
   brand: cleanText("Brand", 1, 80),
   product_name: cleanText("Product name", 1, 120),

@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, useLocalSearchParams } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { z } from "zod";
 
 import { Button, Field, Screen } from "@/components/ui";
@@ -36,32 +36,22 @@ export default function SignInScreen() {
     finish();
   });
 
-  const signUp = handleSubmit(async (credentials) => {
-    const { data, error } = await supabase.auth.signUp(credentials);
-    if (error) {
-      Alert.alert("Could not create account", error.message);
-      return;
-    }
-    if (!data.session) {
-      Alert.alert("Check your inbox", "Confirm your email, then return here to sign in.");
-      return;
-    }
-    finish();
-  });
-
   return (
     <Screen>
       <View style={styles.header}>
         <Text style={styles.kicker}>WELCOME TO SNACC</Text>
-        <Text style={styles.title}>Save your snack opinions.</Text>
-        <Text style={styles.copy}>Use email and password to sign in or create an account.</Text>
+        <Text style={styles.title}>Sign in to save your snack opinions.</Text>
+        <Text style={styles.copy}>
+          Use the email and password for your existing account.
+        </Text>
       </View>
 
       {!isSupabaseConfigured ? (
         <View style={styles.notice}>
           <Text style={styles.noticeTitle}>Backend setup required</Text>
           <Text style={styles.copy}>
-            Copy .env.example to .env and add your Supabase URL and public anon key.
+            Copy .env.example to .env and add your Supabase URL and public anon
+            key.
           </Text>
         </View>
       ) : null}
@@ -101,9 +91,18 @@ export default function SignInScreen() {
       <Button onPress={signIn} disabled={isSubmitting || !isSupabaseConfigured}>
         {isSubmitting ? "Working…" : "Sign in"}
       </Button>
-      <Button variant="secondary" onPress={signUp} disabled={isSubmitting || !isSupabaseConfigured}>
-        Create account
-      </Button>
+
+      <Pressable
+        onPress={() =>
+          router.push({
+            pathname: "/sign-up",
+            params: returnTo ? { returnTo } : undefined,
+          })
+        }
+        style={styles.linkRow}
+      >
+        <Text style={styles.link}>New here? Create an account</Text>
+      </Pressable>
     </Screen>
   );
 }
@@ -111,8 +110,25 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   header: { gap: spacing.sm, marginBottom: spacing.md },
   kicker: { color: colors.primaryDark, fontWeight: "900", letterSpacing: 1 },
-  title: { color: colors.ink, fontSize: 34, lineHeight: 39, fontWeight: "900", letterSpacing: -0.8 },
+  title: {
+    color: colors.ink,
+    fontSize: 34,
+    lineHeight: 39,
+    fontWeight: "900",
+    letterSpacing: -0.8,
+  },
   copy: { color: colors.muted, fontSize: 16, lineHeight: 22 },
-  notice: { backgroundColor: "#FFF1C7", padding: spacing.md, borderRadius: radius.md, gap: spacing.xs },
+  notice: {
+    backgroundColor: "#FFF1C7",
+    padding: spacing.md,
+    borderRadius: radius.md,
+    gap: spacing.xs,
+  },
   noticeTitle: { color: colors.ink, fontWeight: "900" },
+  linkRow: { alignItems: "center", paddingVertical: spacing.sm },
+  link: {
+    color: colors.primaryDark,
+    fontWeight: "800",
+    textDecorationLine: "underline",
+  },
 });
