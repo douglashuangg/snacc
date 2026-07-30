@@ -1,5 +1,11 @@
 export type PriceLevel = 1 | 2 | 3;
 export type SnackStatus = "pending" | "approved" | "rejected";
+export type SnackSourceType = "community" | "rakuten";
+export type SnackOriginStatus =
+  | "confirmed_japanese"
+  | "likely_japanese"
+  | "unknown"
+  | "not_japanese";
 
 export interface Category {
   id: string;
@@ -42,8 +48,31 @@ export interface Snack {
   status: SnackStatus;
   created_at: string;
   updated_at: string;
+  source_type?: SnackSourceType;
+  rakuten_product_id?: string | null;
+  jan_code?: string | null;
+  name_ja?: string | null;
+  source_brand_name?: string | null;
+  maker_name?: string | null;
+  maker_name_formal?: string | null;
+  description_ja?: string | null;
+  package_size_text?: string | null;
+  rakuten_product_url?: string | null;
+  rakuten_review_url?: string | null;
+  rakuten_review_average?: number | null;
+  rakuten_review_count?: number | null;
+  price_min_jpy?: number | null;
+  price_max_jpy?: number | null;
+  price_average_jpy?: number | null;
+  origin_status?: SnackOriginStatus;
   subcategories?: Subcategory | null;
   categories?: Category[];
+  /** Primary Rakuten genre path for category hint chips. */
+  rakuten_genres?: Array<{
+    genre_id: string;
+    name_ja: string;
+    path_ja?: string[] | null;
+  }>;
   average_score?: number | null;
   rating_count?: number;
   factor_averages?: {

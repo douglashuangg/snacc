@@ -17,8 +17,33 @@ const snackSelect = `
   *,
   subcategories (*),
   snack_categories (categories (*)),
+  snack_images (image_url, is_primary, position),
+  snack_rakuten_genres (rakuten_genres (genre_id, name_ja, path_ja)),
   ratings (taste, texture, value, packaging, buy_again, overall_score)
 `;
+
+function displayBrand(row: any): string {
+  return (
+    String(row.maker_name || row.brand || row.source_brand_name || "").trim() ||
+    String(row.brand || "Unknown")
+  );
+}
+
+function displayProductName(row: any): string {
+  return (
+    String(row.name_ja || row.product_name || "").trim() ||
+    String(row.product_name || "Snack")
+  );
+}
+
+function primaryImageUrl(row: any): string | null {
+  if (row.image_url) return row.image_url;
+  const images = [...(row.snack_images ?? [])].sort((a: any, b: any) => {
+    if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+    return Number(a.position ?? 0) - Number(b.position ?? 0);
+  });
+  return images[0]?.image_url ?? null;
+}
 
 function mapSnack(row: any): Snack {
   const ratings = (row.ratings ?? []) as Rating[];
@@ -30,8 +55,17 @@ function mapSnack(row: any): Snack {
             10,
         ) / 10
       : 0;
+  const rakutenGenres = (row.snack_rakuten_genres ?? [])
+    .map((item: any) => item.rakuten_genres)
+    .filter(Boolean);
   return {
     ...row,
+    brand: displayBrand(row),
+    product_name: displayProductName(row),
+    image_url: primaryImageUrl(row),
+    maker_name: row.maker_name ?? null,
+    name_ja: row.name_ja ?? null,
+    rakuten_genres: rakutenGenres,
     categories: (row.snack_categories ?? [])
       .map((item: any) => item.categories)
       .filter(Boolean),
@@ -58,7 +92,7 @@ export async function fetchSnacks(filters: SnackFilters = {}): Promise<Snack[]> 
     if (filters.search?.trim()) {
       const term = filters.search.trim().replaceAll(",", "");
       query = query.or(
-        `brand.ilike.%${term}%,product_name.ilike.%${term}%,flavour.ilike.%${term}%`,
+        `brand.ilike.%${term}%,product_name.ilike.%${term}%,flavour.ilike.%${term}%,name_ja.ilike.%${term}%,maker_name.ilike.%${term}%`,
       );
     }
     if (filters.subcategoryId) query = query.eq("subcategory_id", filters.subcategoryId);

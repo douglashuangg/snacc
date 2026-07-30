@@ -141,6 +141,9 @@ export function ScoreBadge({ score }: { score?: number | null }) {
 }
 
 export function SnackCard({ snack }: { snack: Snack }) {
+  const brand = snack.maker_name || snack.brand;
+  const title = snack.name_ja || snack.product_name;
+  const genreHint = snack.rakuten_genres?.[0]?.name_ja;
   return (
     <Link href={`/snack/${snack.id}`} asChild>
       <Pressable style={({ pressed }) => [styles.card, pressed && styles.buttonDimmed]}>
@@ -152,14 +155,14 @@ export function SnackCard({ snack }: { snack: Snack }) {
         />
         <View style={styles.cardBody}>
           <View style={styles.cardTop}>
-            <Text style={styles.eyebrow}>{snack.brand}</Text>
+            <Text style={styles.eyebrow}>{brand}</Text>
             <ScoreBadge score={snack.average_score} />
           </View>
           <Text style={styles.cardTitle} numberOfLines={1}>
-            {snack.product_name}
+            {title}
           </Text>
           <Text style={styles.flavour} numberOfLines={1}>
-            {snack.flavour}
+            {genreHint || snack.flavour}
           </Text>
           <View style={styles.metaRow}>
             <PriceLevelView level={snack.price_level} />

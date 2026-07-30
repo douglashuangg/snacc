@@ -1,0 +1,10 @@
+project_id = "snacc"
+
+[functions.rakuten-sync-genres]
+verify_jwt = false
+
+[functions.rakuten-sync-products]
+verify_jwt = false
+
+[functions.rakuten-reparse-tags]
+verify_jwt = false

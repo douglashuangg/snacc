@@ -38,6 +38,7 @@ export default function RootLayout() {
               <Stack.Screen name="snack/[id]/rate" options={{ title: "Rate & review", presentation: "modal" }} />
               <Stack.Screen name="compare" options={{ title: "Compare snacks" }} />
               <Stack.Screen name="sign-in" options={{ title: "Your account", presentation: "modal" }} />
+              <Stack.Screen name="sign-up" options={{ title: "Create account", presentation: "modal" }} />
             </Stack>
           </AuthProvider>
         </QueryClientProvider>
