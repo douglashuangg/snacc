@@ -2,8 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
 import { colors } from "@/constants/theme";
+import { useAuth } from "@/providers/AuthProvider";
 
 export default function TabLayout() {
+  const { user } = useAuth();
+
   return (
     <Tabs
       screenOptions={{
@@ -33,6 +36,7 @@ export default function TabLayout() {
         name="add"
         options={{
           title: "Tried",
+          href: user ? "/add" : null,
           tabBarIcon: ({ color, size }) => <Ionicons name="checkmark-circle" color={color} size={size} />,
         }}
       />
