@@ -1,6 +1,6 @@
 # Snacc
 
-An Expo Go community app for discovering, rating, reviewing, contributing, and comparing specific snack flavours.
+A social app for discovering, rating, and reviewing different snacks.
 
 ## What is included
 
